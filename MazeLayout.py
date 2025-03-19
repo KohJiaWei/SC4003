@@ -1,6 +1,61 @@
 import numpy as np
 from typing import Tuple
 
+from typing import Tuple
+
+class Direction:
+    """
+    A class representing a direction with an associated vector and icon.
+    Contains singleton-like instances for UP, DOWN, LEFT, and RIGHT.
+    """
+    UP: "Direction"
+    DOWN: "Direction"
+    LEFT: "Direction"
+    RIGHT: "Direction"
+
+    def __init__(self, vector: Tuple[int, int], icon: str):
+        self.vector = vector
+        self.icon = icon
+
+    def __str__(self):
+        return self.icon
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Direction):
+            return NotImplemented
+        return self.vector == other.vector and self.icon == other.icon
+
+    def __hash__(self):
+        """Make the Direction instances hashable by hashing their unique vector."""
+        return hash(self.vector)
+
+    def rotate_clockwise(self) -> "Direction":
+        """Rotate this direction 90 degrees clockwise."""
+        clockwise_map = {
+            Direction.LEFT: Direction.UP,
+            Direction.UP: Direction.RIGHT,
+            Direction.RIGHT: Direction.DOWN,
+            Direction.DOWN: Direction.LEFT
+        }
+        return clockwise_map[self]
+
+    def rotate_anticlockwise(self) -> "Direction":
+        """Rotate this direction 90 degrees counter-clockwise."""
+        anticlockwise_map = {
+            Direction.LEFT: Direction.DOWN,
+            Direction.DOWN: Direction.RIGHT,
+            Direction.RIGHT: Direction.UP,
+            Direction.UP: Direction.LEFT
+        }
+        return anticlockwise_map[self]
+
+# Define the singleton directions after the class has been declared
+Direction.UP = Direction((0, -1), '↑')
+Direction.DOWN = Direction((0, 1), '↓')
+Direction.LEFT = Direction((-1, 0), '←')
+Direction.RIGHT = Direction((1, 0), '→')
+
+
 class State:
     def __init__(self, reward_value=-0.05, is_goal_state=False, is_obstacle=False):
         self.reward_value = float(reward_value)
@@ -41,6 +96,6 @@ def print_maze(maze):
         print(" ".join(str(cell) for cell in row))
 
 # Generate and print a 5x5 random maze
-maze = generate_random_maze((5, 5))
-print_maze(maze)
+# maze = generate_random_maze((5, 5))
+# print_maze(maze)
 
