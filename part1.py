@@ -24,12 +24,6 @@ def solve_and_plot(maze_plotter, solver_class, maze, title, **solver_kwargs):
     maze_plotter.draw_action(solver.layout, solver.policy, title=title, font_size=20)
     print(f"Plotted {title}.")
 
-    maze_plotter.draw_estimated_utilities(
-        solver.layout, solver.utilities, title=title, font_size=9
-    )
-    maze_plotter.draw_action(
-        solver.layout, solver.policy, title=title, font_size=20
-    )
 
 def main():
     root = tk.Tk()
@@ -41,7 +35,7 @@ def main():
 
     # Define solvers and their parameters
     solvers = [
-        (ValueIteration, "Value Iteration", {"error": 1e-4}),
+        (ValueIteration, "Value Iteration", {"error": 1e-5}),
         (PolicyIteration, "Policy Iteration", {}),
         (ModifiedPolicyIteration, "Modified Policy Iteration", {"k": 50})
     ]
@@ -50,7 +44,7 @@ def main():
     for solver_class, title, params in solvers:
         solve_and_plot(maze_plotter, solver_class, q1_maze, title, **params)
 
-    root.mainloop()
+    root.mainloop() #close the matplotlib graph to proceed on
 
 if __name__ == "__main__":
     main()

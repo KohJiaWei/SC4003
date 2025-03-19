@@ -50,10 +50,11 @@ class Direction:
         return anticlockwise_map[self]
 
 # Define the singleton directions after the class has been declared
-Direction.UP = Direction((0, -1), '↑')
-Direction.DOWN = Direction((0, 1), '↓')
-Direction.LEFT = Direction((-1, 0), '←')
-Direction.RIGHT = Direction((1, 0), '→')
+Direction.UP = Direction((-1, 0), '↑')
+Direction.DOWN = Direction((1, 0), '↓')
+Direction.LEFT = Direction((0, -1), '←')
+Direction.RIGHT = Direction((0, 1), '→')
+
 
 
 class State:
