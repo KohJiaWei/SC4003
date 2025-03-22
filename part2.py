@@ -12,7 +12,7 @@ if __name__ == "__main__":
     maze_plotter = GridWorldPlotter(root, cell_size=40, cols=3, max_size=300) 
 
     plotter = Part2Plotter()
-    for s in range(5, 21, 3):
+    for s in range(5, 15, 3):
     # In your part2 code, replace the loop with:
 
         maze = generate_random_maze(size=(s, s))
