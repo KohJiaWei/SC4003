@@ -31,7 +31,7 @@ def main():
     maze_plotter.pack()
 
     q1_maze = get_q1_maze()
-    maze_plotter.draw_maze(q1_maze, font_size=15)
+    maze_plotter.draw_maze(q1_maze)
 
     # Define solvers and their parameters
     solvers = [

@@ -28,10 +28,11 @@ if __name__ == "__main__":
         plotter.add_data("Value Iteration", s, solver.solve, error=1e-4)
 
         solver = PolicyIteration(maze, discount=0.99)
-        plotter.add_data("Policy Iteration", s, solver.solve)
+        plotter.add_data("Policy Iteration", s, lambda: solver.solve(max_iterations=50))
 
         solver = ModifiedPolicyIteration(maze, discount=0.99)
-        plotter.add_data("Modified Policy Iteration", s, solver.solve, k=50)
+        plotter.add_data("Modified Policy Iteration", s, lambda: solver.solve(k=50))
+
 
         # Scale cell size down to ensure overall size is the same
         # cell_size = cell_size / (s + 3) * s

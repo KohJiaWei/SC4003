@@ -171,115 +171,100 @@ class ValueIteration(MDP):
         return iteration
 
 class PolicyIteration(MDP):
-    def _get_linear_equation(self, i:int, j:int, action:Direction):
+    def _get_linear_equation(self, i: int, j: int, action: Direction):
         """
-        Finds the simplified version of the Bellman equation of a state: U(s) = R(s) + γ∑P(s'|s,π(s))U(s') = -R(s)
-
-        Args:
-            i (int): x-coordinate of state
-            j (int): y-coordinate of state
-            action (Direction): The action taken by the agent in this state - A(s)
-
-        Returns:
-            List[int]: The linear equation representing the simplified version of the Bellman equation
+        Constructs a linear equation for a given state-action pair based on the Bellman equation.
+        Format: -U(s) + γ∑P(s'|s,π(s))U(s') = -R(s)
         """
-        # Initializes the linear equation
-        eqn = [0 for _ in range(self.width * self.height)]
-        state = self.layout[i][j]
-
-        # If state is a obstacle, there are no actions to consider
-        if state.is_obstacle:
+        eqn = [0] * (self.width * self.height)
+        if self.layout[i][j].is_obstacle:
             return eqn
-        
-        # numpy.linalg.solve expects the linear system in this format:
-        # -U(s) + γ∑P(s'|s,π(s))U(s') = -R(s)
-        eqn[i * self.width + j] += -1
 
-        # Intended outcome happens (P = 0.8)
-        di, dj = action.vector
-        ni, nj = i+di, j+dj
-        # Action results in movement
-        if self._agent_will_move(i, j, di, dj):
-            eqn[ni * self.width + nj] += self.discount * 0.8
-        # Action results in staying
-        else:
-            eqn[i * self.width + j] += self.discount * 0.8
+        eqn[i * self.width + j] = -1  # -U(s)
 
-        # 1st unintended outcome happens (P = 0.1)
-        di, dj = action.rotate_anticlockwise().vector
-        ni, nj = i+di, j+dj
-        # Action results in movement
-        if self._agent_will_move(i, j, di, dj):
-            eqn[ni * self.width + nj] += self.discount * 0.1
-        # Action results in staying
-        else:
-            eqn[i * self.width + j] += self.discount * 0.1
+        for prob, direction in [(0.8, action),
+                                (0.1, action.rotate_anticlockwise()),
+                                (0.1, action.rotate_clockwise())]:
+            di, dj = direction.vector
+            ni, nj = i + di, j + dj
+            idx = (ni * self.width + nj) if self._agent_will_move(i, j, di, dj) else (i * self.width + j)
+            eqn[idx] += self.discount * prob
 
-        # 2nd unintended outcome happens
-        di, dj = action.rotate_clockwise().vector
-        ni, nj = i+di, j+dj
-        # Action results in movement
-        if self._agent_will_move(i, j, di, dj):
-            eqn[ni * self.width + nj] += self.discount * 0.1
-        # Action results in staying
-        else:
-            eqn[i * self.width + j] += self.discount * 0.1
-        
         return eqn
 
     def _policy_evaluation(self):
         """
-        Evaluates the policy by solving the system of linear equations
+        Solves the system of equations to evaluate the current policy.
         """
-        a = []
-        b = [-self.layout[i][j].reward_value for i in range(self.height) for j in range(self.width)]
+        A = []
+        B = [-self.layout[i][j].reward_value for i in range(self.height) for j in range(self.width)]
         for i in range(self.height):
             for j in range(self.width):
-                a.append(self._get_linear_equation(i, j, self.policy[i][j]))
-
-        x, _, _, _ = np.linalg.lstsq(a, b, rcond=None)
+                A.append(self._get_linear_equation(i, j, self.policy[i][j]))
+        x, _, _, _ = np.linalg.lstsq(A, B, rcond=None)
         return x.reshape((self.height, self.width))
 
-    def solve(self):
+    def _improve_policy(self):
         """
-        Finds the optimum policy and estimated utilities of the MDP
+        Updates the policy using a greedy approach based on current utilities.
+        Returns True if policy is unchanged.
+        """
+        unchanged = True
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.layout[i][j].is_obstacle:
+                    continue
+
+                best_action = None
+                max_utility = float("-inf")
+                action = Direction.LEFT
+                for _ in range(4):
+                    utility = self._get_expected_utility(i, j, action)
+                    if utility > max_utility:
+                        max_utility = utility
+                        best_action = action
+                    action = action.rotate_clockwise()
+
+                if best_action != self.policy[i][j]:
+                    self.policy[i][j] = best_action
+                    unchanged = False
+        return unchanged
+
+    def solve(self, max_iterations=500, verbose=False):
+        """
+        Executes the full policy iteration loop until convergence or max_iterations is reached.
+        
+        Parameters:
+        - max_iterations: maximum number of iterations to avoid infinite loops
+        - verbose: whether to print utility matrices and policy each iteration
         """
         iteration = 0
-        while True:
+        while iteration < max_iterations:
             iteration += 1
+
+            # Policy evaluation: solve the linear system
             self.utilities = self.prev_utilities = self._policy_evaluation()
-            unchanged = True
-            for i in range(self.height):
-                for j in range(self.width):
-                    state = self.layout[i][j]
-                    # Ignore state if state is a wall
-                    if state.is_obstacle:
-                        continue
 
-                    # Find best action by calculating Q(s,a) for each action
-                    max_utility = float('-inf')
-                    best_action = action = Direction.LEFT
+            # Policy improvement
+            unchanged = self._improve_policy()
 
-                    # Try all four possible actions
-                    for _ in range(4):
-                        utility = self._get_expected_utility(i, j, action)
-                        if utility > max_utility:
-                            max_utility = utility
-                            best_action = action
-                        action = action.rotate_clockwise()
-                    
-                    # If best action is different from current action, set unchanged to False
-                    if best_action != self.policy[i][j]:
-                        self.policy[i][j] = best_action
-                        unchanged = False
-            
-            # Add data to plot
+            # For plotting convergence
             self.utility_plotter.add_data(self.utilities, self.layout)
+
+            if verbose:
+                print(f"Iteration {iteration}")
+                self.print_utilities()
+                self.print_actions()
+                print("-" * 30)
 
             if unchanged:
                 break
-        
-        print(f"Policy Iteration took {iteration} iterations to converge")
+
+        if iteration == max_iterations:
+            print(f"⚠️ Policy Iteration reached the maximum of {max_iterations} iterations without full convergence.")
+        else:
+            print(f"✅ Policy Iteration converged in {iteration} iterations.")
+
         return iteration
 
 class ModifiedPolicyIteration(MDP):
@@ -309,6 +294,7 @@ class ModifiedPolicyIteration(MDP):
             
             # Updates the value of each state synchronously
             self._update_prev_values()
+        return self.utilities  # <-- Ensure utilities are returned
     
     def solve(self, k:int):
         """

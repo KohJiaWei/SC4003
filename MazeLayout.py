@@ -87,10 +87,20 @@ def get_q1_maze():
     ]
 
 def generate_random_maze(size:Tuple[int, int]):
-    choices = [POS, NEG, NTS, WALL]
+    choices = [
+        lambda: State(reward_value=1, is_goal_state=True),   # POS
+        lambda: State(reward_value=-1, is_goal_state=True),  # NEG
+        lambda: State(reward_value=-0.05),  # NTS
+        lambda: State(reward_value=0, is_obstacle=True)  # WALL
+    ]
     probabilities = [0.1, 0.1, 0.7, 0.1]
-    print( np.random.choice(choices, size=size, p=probabilities))
-    return np.random.choice(choices, size=size, p=probabilities)
+
+    maze = [[np.random.choice(choices, p=probabilities)() for _ in range(size[1])]
+            for _ in range(size[0])]
+
+    print_maze(maze)  # Print generated maze
+    return maze
+
 
 def print_maze(maze):
     for row in maze:
