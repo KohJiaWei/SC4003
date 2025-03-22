@@ -1,0 +1,1 @@
+for both part1.py and part2.py you can run them individually, and close the matplotlib NOT TKINTER to see the next plots.
